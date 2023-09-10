@@ -52,8 +52,19 @@ class MyInAppBrowser extends InAppBrowser {
 
   @override
   Future<NavigationActionPolicy> shouldOverrideUrlLoading(
-      navigationAction) async {
+      NavigationAction navigationAction) async {
     print("\n\nOverride ${navigationAction.request.url}\n\n");
+
+    // Check if the platform is macOS
+    if (Platform.isMacOS) {
+      // Handle the URL navigation without opening a new window
+      await webViewController?.loadUrl(
+        urlRequest: navigationAction.request,
+      );
+      return NavigationActionPolicy.CANCEL;
+    }
+
+    // For other platforms, allow normal navigation behavior
     return NavigationActionPolicy.ALLOW;
   }
 }
@@ -68,6 +79,24 @@ class InAppBrowserExampleScreen extends StatefulWidget {
 
 class _InAppBrowserExampleScreenState extends State<InAppBrowserExampleScreen> {
   PullToRefreshController? pullToRefreshController;
+  final List<String> urls = [
+    'https://www.google.com',
+    'https://www.facebook.com',
+    'https://www.openai.com',
+    'https://www.flutter.dev',
+  ];
+
+  int _currentIndex = 0;
+
+  void _loadUrl(int index) async {
+    await widget.browser.openUrlRequest(
+      urlRequest: URLRequest(
+        url: WebUri(Uri.parse(urls[index]).toString()),
+    ),
+    );
+
+
+  }
 
   @override
   void initState() {
@@ -101,36 +130,35 @@ class _InAppBrowserExampleScreenState extends State<InAppBrowserExampleScreen> {
             title: Text(
           "InAppBrowser",
         )),
-        drawer: myDrawer(context: context),
-        body: Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    await widget.browser.openUrlRequest(
-                      urlRequest:
-                          URLRequest(url: WebUri("https://flutter.dev")),
-                      settings: InAppBrowserClassSettings(
-                        browserSettings: InAppBrowserSettings(
-                            toolbarTopBackgroundColor: Colors.blue,
-                            presentationStyle: ModalPresentationStyle.POPOVER),
-                        webViewSettings: InAppWebViewSettings(
-                          isInspectable: kDebugMode,
-                          useShouldOverrideUrlLoading: true,
-                          useOnLoadResource: true,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Text("Open In-App Browser")),
-              Container(height: 40),
-              ElevatedButton(
-                  onPressed: () async {
-                    await InAppBrowser.openWithSystemBrowser(
-                        url: WebUri("https://flutter.dev/"));
-                  },
-                  child: Text("Open System Browser")),
-            ])));
+        //drawer: myDrawer(context: context),
+        body: Container(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+            _loadUrl(index);
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home,color: Colors.black,),
+            label: 'Google',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.link,color: Colors.black,),
+            label: 'Example',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.language,color: Colors.black,),
+            label: 'OpenAI',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.code,color: Colors.black,),
+            label: 'Flutter',
+          ),
+        ],
+      ),
+    );
   }
 }
